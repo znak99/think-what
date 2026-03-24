@@ -1,0 +1,73 @@
+# ============================
+# 환경변수
+# ============================
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env*.local
+
+# ============================
+# IDE
+# ============================
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================
+# OS
+# ============================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================
+# Frontend (React + TypeScript)
+# ============================
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.eslintcache
+frontend/coverage/
+frontend/*.tsbuildinfo
+
+# ============================
+# Backend (FastAPI + Python)
+# ============================
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+backend/*.pyo
+backend/.Python
+backend/.venv/
+backend/venv/
+backend/*.egg-info/
+backend/dist/
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+backend/coverage.xml
+
+# ============================
+# Docker / DB 볼륨
+# ============================
+docker/volumes/
+mysql_data/
+.docker/
+
+# ============================
+# 로그
+# ============================
+*.log
+logs/
