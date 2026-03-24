@@ -50,9 +50,9 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
         rank_points=user.rank_points,
         websocket=websocket,
     )
-    await room.add_player(player)
 
     try:
+        await room.add_player(player)
         while True:
             raw = await websocket.receive_text()
             try:
@@ -67,6 +67,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
             await _handle_event(user.id, event)
 
     except WebSocketDisconnect:
+        await room.remove_player(user.id)
+    except Exception:
+        import traceback
+        traceback.print_exc()
         await room.remove_player(user.id)
 
 

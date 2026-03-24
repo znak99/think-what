@@ -11,8 +11,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 from fastapi import WebSocket
-from sqlalchemy.sql.expression import func
-
 from database import SessionLocal
 from game.canvas import CanvasHistory
 from models.word import Word
@@ -68,16 +66,37 @@ class GameRoom:
                 "player_count": len(self.players),
             },
         ))
-        # 중간 입장자에게 현재 캔버스 이벤트 재생
+        # 캔버스 이벤트 재생 (중간 입장 / 재접속)
         snapshot = self.canvas.snapshot()
         if snapshot:
             await player.websocket.send_text(json.dumps({
                 "type": "canvas_replay",
                 "payload": {"events": snapshot},
             }))
+        # 게임 진행 중 재접속: 현재 게임 상태 전송
+        if self.is_playing:
+            players_info = [
+                {"user_id": p.user_id, "nickname": p.nickname, "rank_points": p.rank_points}
+                for p in self.players.values()
+            ]
+            payload: dict = {
+                "questioner_id": self.questioner_id,
+                "player_count": len(self.players),
+                "players": players_info,
+            }
+            if player.user_id == self.questioner_id:
+                payload["consonants"] = self.current_consonants
+            await player.websocket.send_text(
+                OutEvent(type=OutEventType.GAME_START, payload=payload).model_dump_json()
+            )
+            return
         # 2명 이상이면 게임 시작 시도
-        if len(self.players) >= 2 and not self.is_playing:
-            await self.start_round()
+        if len(self.players) >= 2:
+            try:
+                await self.start_round()
+            except Exception:
+                import traceback
+                traceback.print_exc()
 
     async def remove_player(self, user_id: int) -> None:
         self.players.pop(user_id, None)
@@ -101,13 +120,15 @@ class GameRoom:
         """새 라운드를 시작합니다. consonants 미지정 시 DB에서 무작위 초성을 조회합니다."""
         await self._stop_round()
 
-        # 미지정 시 DB에서 무작위 초성 조회
+        # 미지정 시 DB에서 무작위 초성 조회 (Python random으로 MySQL/SQLite 호환)
         if consonants is None:
             db = SessionLocal()
             try:
-                row = db.query(Word).order_by(func.random()).first()
-                if row:
-                    consonants = row.consonants
+                count = db.query(Word).count()
+                if count > 0:
+                    row = db.query(Word).offset(random.randint(0, count - 1)).first()
+                    if row:
+                        consonants = row.consonants
             finally:
                 db.close()
 
