@@ -23,7 +23,6 @@ export default function GamePage() {
   const [players, setPlayers] = useState<PlayerInfo[]>([])
   const [questionerId, setQuestionerId] = useState<number | null>(null)
   const [consonants, setConsonants] = useState<string | null>(null)
-  const [currentWord, setCurrentWord] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(180)
   const [messages, setMessages] = useState<ChatMsg[]>([])
   const [voteStatus, setVoteStatus] = useState<VoteStatus | null>(null)
@@ -65,8 +64,7 @@ export default function GamePage() {
       const ps = payload.players as PlayerInfo[]
       setPlayers(ps)
       setQuestionerId(payload.questioner_id as number)
-      setConsonants(payload.consonants as string)
-      setCurrentWord((payload.word as string) ?? null)  // 출제자에게만 전달됨
+      setConsonants((payload.consonants as string) ?? null)  // 출제자에게만 전달됨
       setVoteStatus(null)
       setHasVoted(false)
       setRoundResult(null)
@@ -94,16 +92,15 @@ export default function GamePage() {
       setRoundResult({
         winner_id: winnerId,
         winner_nickname: winnerNickname,
-        word: payload.word as string | null,
         consonants: payload.consonants as string | null,
       })
-      setCurrentWord(null)
+      setConsonants(null)
       setPhase('round_end')
       addMessage({
         user_id: 0, nickname: '',
         message: winnerId
-          ? `🎉 ${winnerNickname} 님이 정답을 맞췄습니다! 정답: ${payload.word}`
-          : `⏰ 시간 초과! 정답은 "${payload.word}" 이었습니다.`,
+          ? `🎉 ${winnerNickname} 님이 정답을 맞췄습니다! (${payload.consonants})`
+          : `⏰ 시간 초과! 초성은 "${payload.consonants}" 이었습니다.`,
         isSystem: true, isCorrect: !!winnerId,
       })
     }, [players]),
@@ -201,16 +198,8 @@ export default function GamePage() {
           </span>
         )}
 
-        {/* 정답 (출제자만) / 초성 (참가자) */}
-        {isQuestioner && currentWord ? (
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-green-400/10 border border-green-400/20">
-            <span className="text-xs text-[#7d8590] uppercase tracking-wider">정답</span>
-            <span className="font-mono text-lg font-bold text-green-400 tracking-widest">{currentWord}</span>
-            {consonants && (
-              <span className="text-xs text-[#7d8590] font-mono">({consonants})</span>
-            )}
-          </div>
-        ) : consonants && (
+        {/* 초성 — 출제자에게만 표시 */}
+        {isQuestioner && consonants && (
           <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-green-400/10 border border-green-400/20">
             <span className="text-xs text-[#7d8590] uppercase tracking-wider">초성</span>
             <span className="font-mono text-lg font-bold text-green-400 tracking-widest">{consonants}</span>
@@ -285,10 +274,7 @@ export default function GamePage() {
                 ) : (
                   <p className="text-yellow-400 text-xl font-bold">⏰ 시간 초과</p>
                 )}
-                <p className="mt-3 font-mono text-3xl font-bold text-[#e6edf3]">{roundResult.word}</p>
-                <p className="mt-1 text-sm text-[#7d8590]">
-                  초성: <span className="font-mono text-green-400">{roundResult.consonants}</span>
-                </p>
+                <p className="mt-3 font-mono text-4xl font-bold text-green-400 tracking-widest">{roundResult.consonants}</p>
                 <p className="mt-4 text-xs text-[#484f58]">잠시 후 다음 라운드가 시작됩니다...</p>
               </div>
             )}

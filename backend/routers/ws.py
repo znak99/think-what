@@ -91,16 +91,16 @@ async def _on_chat(user_id: int, payload: dict) -> None:
     if not message:
         return
 
-    # 정답 판정 (참가자만, 출제자 제외)
+    # 정답 판정: 참가자가 초성을 정확히 입력하면 정답
     if (
         room.is_playing
         and room.questioner_id != user_id
-        and room.current_word is not None
-        and message == room.current_word
+        and room.current_consonants is not None
+        and message == room.current_consonants
     ):
         await room.broadcast(OutEvent(
             type=OutEventType.CORRECT,
-            payload={"user_id": user_id, "nickname": player.nickname, "word": room.current_word},
+            payload={"user_id": user_id, "nickname": player.nickname},
         ))
         await room.end_round(winner_id=user_id)
         return
@@ -155,7 +155,7 @@ async def _on_vote_kick(user_id: int) -> None:
         # 5분 쿨다운 (비동기 태스크로 처리)
         import asyncio
         asyncio.create_task(_reset_vote_cooldown())
-        await room.start_round(word=room.current_word, consonants=room.current_consonants)
+        await room.start_round()
 
 
 async def _reset_vote_cooldown() -> None:

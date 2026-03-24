@@ -55,6 +55,5 @@ export type GamePhase = 'waiting' | 'countdown' | 'playing' | 'round_end'
 export interface RoundEndResult {
   winner_id: number | null
   winner_nickname: string | null
-  word: string | null
   consonants: string | null
 }

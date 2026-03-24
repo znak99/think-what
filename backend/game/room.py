@@ -37,9 +37,8 @@ class GameRoom:
         # 직전 출제자 user_id (재배정 시 제외 대상)
         self.prev_questioner_id: Optional[int] = None
 
-        # 현재 라운드 정보
-        self.current_word: Optional[str] = None       # 실제 단어
-        self.current_consonants: Optional[str] = None  # 초성
+        # 현재 라운드 초성
+        self.current_consonants: Optional[str] = None
 
         # 캔버스 이벤트 누적 (중간 입장자 재생용)
         self.canvas = CanvasHistory()
@@ -98,17 +97,16 @@ class GameRoom:
     # 라운드 관리
     # ------------------------------------------------------------------
 
-    async def start_round(self, word: Optional[str] = None, consonants: Optional[str] = None) -> None:
-        """새 라운드를 시작합니다. word/consonants 미지정 시 DB에서 무작위 단어를 조회합니다."""
+    async def start_round(self, consonants: Optional[str] = None) -> None:
+        """새 라운드를 시작합니다. consonants 미지정 시 DB에서 무작위 초성을 조회합니다."""
         await self._stop_round()
 
-        # word 미지정 시 DB에서 무작위 단어 조회
-        if word is None:
+        # 미지정 시 DB에서 무작위 초성 조회
+        if consonants is None:
             db = SessionLocal()
             try:
                 row = db.query(Word).order_by(func.random()).first()
                 if row:
-                    word = row.word
                     consonants = row.consonants
             finally:
                 db.close()
@@ -116,6 +114,7 @@ class GameRoom:
         self.canvas.clear()
         self.vote_set.clear()
         self.is_playing = True
+        self.current_consonants = consonants
 
         # 출제자 선정 (직전 출제자 제외)
         candidates = [uid for uid in self.players if uid != self.prev_questioner_id]
@@ -124,29 +123,29 @@ class GameRoom:
         self.questioner_id = random.choice(candidates)
         self.prev_questioner_id = self.questioner_id
 
-        self.current_word = word
-        self.current_consonants = consonants
-
         players_info = [
             {"user_id": p.user_id, "nickname": p.nickname, "rank_points": p.rank_points}
             for p in self.players.values()
         ]
-        base_payload = {
-            "questioner_id": self.questioner_id,
-            "consonants": consonants,
-            "player_count": len(self.players),
-            "players": players_info,
-        }
 
-        # 참가자에게 브로드캐스트 (출제자 제외)
+        # 참가자에게 브로드캐스트 — 초성은 숨김
         await self.broadcast(
-            OutEvent(type=OutEventType.GAME_START, payload=base_payload),
+            OutEvent(type=OutEventType.GAME_START, payload={
+                "questioner_id": self.questioner_id,
+                "player_count": len(self.players),
+                "players": players_info,
+            }),
             exclude_id=self.questioner_id,
         )
-        # 출제자에게만 정답(word) 포함하여 별도 전송
+        # 출제자에게만 초성 전송
         await self.send_to(self.questioner_id, OutEvent(
             type=OutEventType.GAME_START,
-            payload={**base_payload, "word": word},
+            payload={
+                "questioner_id": self.questioner_id,
+                "consonants": consonants,
+                "player_count": len(self.players),
+                "players": players_info,
+            },
         ))
 
         # 3분 타이머 시작
@@ -168,11 +167,9 @@ class GameRoom:
             type=OutEventType.GAME_END,
             payload={
                 "winner_id": winner_id,
-                "word": self.current_word,
                 "consonants": self.current_consonants,
             },
         ))
-        self.current_word = None
         self.current_consonants = None
         # 3초 후 다음 라운드 자동 시작 (2명 이상일 때만)
         if len(self.players) >= 2:
