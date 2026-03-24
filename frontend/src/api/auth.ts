@@ -9,8 +9,13 @@ export const authApi = {
     apiClient.post<TokenResponse>('/auth/login', { email, password }),
 
   verifyIdentity: (email: string, nickname: string) =>
-    apiClient.post<{ verified: boolean }>('/auth/password-reset/verify', { email, nickname }),
+    apiClient.post<{ detail: string }>('/auth/password-reset/verify', { email, nickname }),
 
-  resetPassword: (email: string, nickname: string, new_password: string) =>
-    apiClient.post('/auth/password-reset/confirm', { email, nickname, new_password }),
+  resetPassword: (email: string, nickname: string, new_password: string, new_password_confirm: string) =>
+    apiClient.post<{ detail: string }>('/auth/password-reset/confirm', {
+      email,
+      nickname,
+      new_password,
+      new_password_confirm,
+    }),
 }
