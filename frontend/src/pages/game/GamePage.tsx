@@ -23,6 +23,7 @@ export default function GamePage() {
   const [players, setPlayers] = useState<PlayerInfo[]>([])
   const [questionerId, setQuestionerId] = useState<number | null>(null)
   const [consonants, setConsonants] = useState<string | null>(null)
+  const [currentWord, setCurrentWord] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(180)
   const [messages, setMessages] = useState<ChatMsg[]>([])
   const [voteStatus, setVoteStatus] = useState<VoteStatus | null>(null)
@@ -65,6 +66,7 @@ export default function GamePage() {
       setPlayers(ps)
       setQuestionerId(payload.questioner_id as number)
       setConsonants(payload.consonants as string)
+      setCurrentWord((payload.word as string) ?? null)  // 출제자에게만 전달됨
       setVoteStatus(null)
       setHasVoted(false)
       setRoundResult(null)
@@ -95,6 +97,7 @@ export default function GamePage() {
         word: payload.word as string | null,
         consonants: payload.consonants as string | null,
       })
+      setCurrentWord(null)
       setPhase('round_end')
       addMessage({
         user_id: 0, nickname: '',
@@ -198,8 +201,16 @@ export default function GamePage() {
           </span>
         )}
 
-        {/* 초성 */}
-        {consonants && (
+        {/* 정답 (출제자만) / 초성 (참가자) */}
+        {isQuestioner && currentWord ? (
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-green-400/10 border border-green-400/20">
+            <span className="text-xs text-[#7d8590] uppercase tracking-wider">정답</span>
+            <span className="font-mono text-lg font-bold text-green-400 tracking-widest">{currentWord}</span>
+            {consonants && (
+              <span className="text-xs text-[#7d8590] font-mono">({consonants})</span>
+            )}
+          </div>
+        ) : consonants && (
           <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-green-400/10 border border-green-400/20">
             <span className="text-xs text-[#7d8590] uppercase tracking-wider">초성</span>
             <span className="font-mono text-lg font-bold text-green-400 tracking-widest">{consonants}</span>

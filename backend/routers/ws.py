@@ -95,8 +95,8 @@ async def _on_chat(user_id: int, payload: dict) -> None:
     if (
         room.is_playing
         and room.questioner_id != user_id
-        and room.current_consonants is not None
-        and message == room.current_consonants
+        and room.current_word is not None
+        and message == room.current_word
     ):
         await room.broadcast(OutEvent(
             type=OutEventType.CORRECT,

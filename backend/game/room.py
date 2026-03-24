@@ -11,8 +11,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from fastapi import WebSocket
+from sqlalchemy.sql.expression import func
 
+from database import SessionLocal
 from game.canvas import CanvasHistory
+from models.word import Word
 from schemas.ws import OutEvent, OutEventType
 
 
@@ -83,20 +86,32 @@ class GameRoom:
             type=OutEventType.PLAYER_LEAVE,
             payload={"user_id": user_id, "player_count": len(self.players)},
         ))
+        # 1명 이하면 게임 중단 (출제자 재배정보다 먼저 확인)
+        if len(self.players) < 2:
+            await self._stop_round()
+            return
         # 출제자가 나간 경우 새 출제자 지정
         if self.questioner_id == user_id and self.is_playing:
             await self.start_round()
-        # 1명 이하면 게임 중단
-        if len(self.players) < 2:
-            await self._stop_round()
 
     # ------------------------------------------------------------------
     # 라운드 관리
     # ------------------------------------------------------------------
 
     async def start_round(self, word: Optional[str] = None, consonants: Optional[str] = None) -> None:
-        """새 라운드를 시작합니다. word/consonants는 DB에서 조회 후 주입합니다."""
+        """새 라운드를 시작합니다. word/consonants 미지정 시 DB에서 무작위 단어를 조회합니다."""
         await self._stop_round()
+
+        # word 미지정 시 DB에서 무작위 단어 조회
+        if word is None:
+            db = SessionLocal()
+            try:
+                row = db.query(Word).order_by(func.random()).first()
+                if row:
+                    word = row.word
+                    consonants = row.consonants
+            finally:
+                db.close()
 
         self.canvas.clear()
         self.vote_set.clear()
@@ -112,17 +127,26 @@ class GameRoom:
         self.current_word = word
         self.current_consonants = consonants
 
-        await self.broadcast(OutEvent(
+        players_info = [
+            {"user_id": p.user_id, "nickname": p.nickname, "rank_points": p.rank_points}
+            for p in self.players.values()
+        ]
+        base_payload = {
+            "questioner_id": self.questioner_id,
+            "consonants": consonants,
+            "player_count": len(self.players),
+            "players": players_info,
+        }
+
+        # 참가자에게 브로드캐스트 (출제자 제외)
+        await self.broadcast(
+            OutEvent(type=OutEventType.GAME_START, payload=base_payload),
+            exclude_id=self.questioner_id,
+        )
+        # 출제자에게만 정답(word) 포함하여 별도 전송
+        await self.send_to(self.questioner_id, OutEvent(
             type=OutEventType.GAME_START,
-            payload={
-                "questioner_id": self.questioner_id,
-                "consonants": consonants,         # 참가자에게 초성 공개
-                "player_count": len(self.players),
-                "players": [
-                    {"user_id": p.user_id, "nickname": p.nickname, "rank_points": p.rank_points}
-                    for p in self.players.values()
-                ],
-            },
+            payload={**base_payload, "word": word},
         ))
 
         # 3분 타이머 시작
@@ -132,6 +156,11 @@ class GameRoom:
         await asyncio.sleep(180)  # 3분
         if self.is_playing:
             await self.end_round(winner_id=None)
+
+    async def _next_round_after_delay(self) -> None:
+        await asyncio.sleep(3)
+        if not self.is_playing and len(self.players) >= 2:
+            await self.start_round()
 
     async def end_round(self, winner_id: Optional[int]) -> None:
         await self._stop_round()
@@ -145,6 +174,9 @@ class GameRoom:
         ))
         self.current_word = None
         self.current_consonants = None
+        # 3초 후 다음 라운드 자동 시작 (2명 이상일 때만)
+        if len(self.players) >= 2:
+            asyncio.create_task(self._next_round_after_delay())
 
     async def _stop_round(self) -> None:
         self.is_playing = False
