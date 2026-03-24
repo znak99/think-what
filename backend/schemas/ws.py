@@ -19,9 +19,9 @@ WebSocket 이벤트 스키마
   vote_kick   : 투표 현황 브로드캐스트
 """
 from enum import Enum
-from typing import Any
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class InEventType(str, Enum):
@@ -42,6 +42,22 @@ class OutEventType(str, Enum):
     PLAYER_LEAVE = "player_leave"
     VOTE_KICK = "vote_kick"
     ERROR = "error"
+
+
+class DrawPayload(BaseModel):
+    """
+    드로잉 이벤트 페이로드
+    - x0, y0: 시작 좌표 (0.0 ~ 1.0, 캔버스 크기에 비례한 정규화 값)
+    - x1, y1: 끝 좌표
+    - color  : 펜 색상 HEX (ex: "#000000")
+    - width  : 선 굵기 (px)
+    """
+    x0: float = Field(..., ge=0.0, le=1.0)
+    y0: float = Field(..., ge=0.0, le=1.0)
+    x1: float = Field(..., ge=0.0, le=1.0)
+    y1: float = Field(..., ge=0.0, le=1.0)
+    color: str = "#000000"
+    width: float = Field(default=3.0, gt=0)
 
 
 class InEvent(BaseModel):

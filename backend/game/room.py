@@ -7,11 +7,12 @@ GameRoom — 서버 인메모리 게임 상태 싱글턴
 import asyncio
 import json
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from fastapi import WebSocket
 
+from game.canvas import CanvasHistory
 from schemas.ws import OutEvent, OutEventType
 
 
@@ -38,7 +39,7 @@ class GameRoom:
         self.current_consonants: Optional[str] = None  # 초성
 
         # 캔버스 이벤트 누적 (중간 입장자 재생용)
-        self.canvas_events: list[dict] = []
+        self.canvas = CanvasHistory()
 
         # 투표 상태
         self.vote_set: set[int] = set()   # 투표한 user_id
@@ -66,10 +67,11 @@ class GameRoom:
             },
         ))
         # 중간 입장자에게 현재 캔버스 이벤트 재생
-        if self.canvas_events:
+        snapshot = self.canvas.snapshot()
+        if snapshot:
             await player.websocket.send_text(json.dumps({
                 "type": "canvas_replay",
-                "payload": {"events": self.canvas_events},
+                "payload": {"events": snapshot},
             }))
         # 2명 이상이면 게임 시작 시도
         if len(self.players) >= 2 and not self.is_playing:
@@ -96,7 +98,7 @@ class GameRoom:
         """새 라운드를 시작합니다. word/consonants는 DB에서 조회 후 주입합니다."""
         await self._stop_round()
 
-        self.canvas_events.clear()
+        self.canvas.clear()
         self.vote_set.clear()
         self.is_playing = True
 

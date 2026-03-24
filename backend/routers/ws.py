@@ -12,7 +12,7 @@ from core.security import decode_token
 from database import SessionLocal
 from game.room import Player, room
 from models.user import User
-from schemas.ws import InEvent, InEventType, OutEvent, OutEventType
+from schemas.ws import DrawPayload, InEvent, InEventType, OutEvent, OutEventType
 
 router = APIRouter(tags=["게임"])
 
@@ -115,9 +115,15 @@ async def _on_chat(user_id: int, payload: dict) -> None:
 async def _on_draw(user_id: int, payload: dict) -> None:
     if room.questioner_id != user_id:
         return
-    room.canvas_events.append(payload)
+    try:
+        draw = DrawPayload(**payload)
+    except Exception:
+        return  # 잘못된 드로잉 페이로드 무시
+    event_dict = room.canvas.add(draw)
+    if event_dict is None:
+        return  # 허용되지 않는 색상 또는 누적 한도 초과
     await room.broadcast(
-        OutEvent(type=OutEventType.DRAW, payload=payload),
+        OutEvent(type=OutEventType.DRAW, payload=event_dict),
         exclude_id=user_id,
     )
 
@@ -125,7 +131,7 @@ async def _on_draw(user_id: int, payload: dict) -> None:
 async def _on_clear(user_id: int) -> None:
     if room.questioner_id != user_id:
         return
-    room.canvas_events.clear()
+    room.canvas.clear()
     await room.broadcast(OutEvent(type=OutEventType.CLEAR, payload={}))
 
 
