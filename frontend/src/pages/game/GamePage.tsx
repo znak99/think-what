@@ -217,10 +217,10 @@ export default function GamePage() {
       </header>
 
       {/* ── 메인 콘텐츠 ─────────────────────────────────── */}
-      <div className="flex-1 flex gap-3 p-3 overflow-hidden">
+      <div className="flex-1 min-h-0 flex gap-3 p-3 overflow-hidden">
 
         {/* 플레이어 리스트 (20%) */}
-        <div className="w-48 shrink-0">
+        <div className="w-48 shrink-0 h-full">
           <PlayerList
             players={players}
             questionerId={questionerId}
@@ -291,7 +291,7 @@ export default function GamePage() {
         </div>
 
         {/* 채팅 패널 (25%) */}
-        <div className="w-64 shrink-0">
+        <div className="w-64 shrink-0 h-full">
           <ChatPanel messages={messages} onSend={sendChat} />
         </div>
       </div>
