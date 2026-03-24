@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-base text-[#e6edf3] font-sans antialiased;
+    /* 스크롤바 스타일 */
+    scrollbar-width: thin;
+    scrollbar-color: #21262d transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-[#21262d] rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#30363d];
+  }
+
+  /* 텍스트 선택 색상 */
+  ::selection {
+    @apply bg-green-400/30 text-[#e6edf3];
+  }
+}
+
+@layer utilities {
+  /* Glass 카드 */
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  /* 액센트 glow */
+  .glow-green {
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.4);
+  }
+
+  /* 포커스 링 */
+  .focus-ring {
+    @apply focus:outline-none focus:border-green-400/50 focus:shadow-[0_0_0_3px_rgba(74,222,128,0.08)];
+  }
+}
