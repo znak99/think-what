@@ -31,7 +31,7 @@ export default function ChatPanel({ messages, onSend }: Props) {
       </div>
 
       {/* 메시지 목록 */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 text-sm">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-1 text-sm">
         {messages.map((msg) => (
           <div key={msg.id} className="animate-slide-up">
             {msg.isSystem ? (
