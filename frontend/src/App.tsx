@@ -4,9 +4,11 @@ import LoginPage from './pages/auth/LoginPage'
 import PasswordResetPage from './pages/auth/PasswordResetPage'
 import GamePage from './pages/game/GamePage'
 import { AuthGuard } from './components/common/AuthGuard'
+import MinSizeGuard from './components/common/MinSizeGuard'
 
 function App() {
   return (
+    <MinSizeGuard>
     <BrowserRouter>
       <Routes>
         {/* 인증 */}
@@ -28,6 +30,7 @@ function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
+    </MinSizeGuard>
   )
 }
 
