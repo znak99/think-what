@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth
+from routers import auth, ws
 
 app = FastAPI(title="Think-What API")
 
@@ -14,6 +14,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(ws.router)
 
 
 @app.get("/health")
