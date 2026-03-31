@@ -57,19 +57,19 @@ export default function ChatPanel({ messages, onSend }: Props) {
 
       {/* 입력창 */}
       <form onSubmit={handleSubmit} className="p-3 border-t border-[#21262d] shrink-0">
-        <div className="flex gap-2">
+        <div className="relative">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="채팅 또는 초성 입력..."
             maxLength={100}
-            className="flex-1 px-3 py-2 rounded-lg bg-[#161b22] border border-[#21262d] text-sm text-[#e6edf3] placeholder-[#484f58] focus:outline-none focus:border-green-400/50 transition-all duration-200"
+            className="w-full px-3 py-2 pr-10 rounded-lg bg-[#161b22] border border-[#21262d] text-sm text-[#e6edf3] placeholder-[#484f58] focus:outline-none focus:border-green-400/50 transition-all duration-200"
           />
           <button
             type="submit"
             disabled={!input.trim()}
-            className="px-3 py-2 rounded-lg bg-green-400 hover:bg-green-300 text-black text-sm font-semibold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-md bg-green-400 hover:bg-green-300 text-black text-xs font-bold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             ▶
           </button>
